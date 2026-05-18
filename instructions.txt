@@ -1,0 +1,201 @@
+================================================================
+  CVM++ — Run Instructions
+================================================================
+
+This file lists everything needed to build and run CVM++ on your
+machine. Plain text, no formatting required. Open in any editor.
+
+
+================================================================
+  1. PREREQUISITES
+================================================================
+
+You need three things installed before building CVM++.
+
+  (1) A C++ compiler with C++17 support
+      - Windows: MinGW-w64 (g++ 9.0+), installed via MSYS2
+      - Linux:   g++ 9.0+  (apt install g++)
+      - macOS:   clang++ (comes with Xcode Command Line Tools)
+
+  (2) A Unix-style shell to type the commands
+      - Windows: Git Bash, from https://git-scm.com/download/win
+      - Linux / macOS: the built-in terminal
+
+  (3) (Optional) CMake 3.10+ if you want the CMake build
+      - https://cmake.org/download/
+      - On Windows, also install mingw32-make:
+          pacman -S mingw-w64-ucrt-x86_64-make   (run in MSYS2 UCRT64)
+
+Verify each tool is installed (run in Git Bash / terminal):
+
+    g++ --version       (should print g++ 9.x or newer)
+    cmake --version     (optional, only if using CMake)
+
+If any command says "command not found", that tool is not on your
+PATH. On Windows, the MinGW bin folder is usually:
+    C:\msys64\ucrt64\bin
+Add it via System Properties -> Environment Variables -> Path.
+
+
+================================================================
+  2. EXTRACT AND OPEN THE PROJECT
+================================================================
+
+  (1) Extract CVMPlusPlus.zip to a folder with no spaces in the
+      path. Recommended: C:\dev\CVMPlusPlus  (Windows)
+                    or:  ~/dev/CVMPlusPlus   (Linux / macOS)
+
+  (2) Open a terminal (Git Bash on Windows) and cd into the
+      project root:
+
+          cd /c/dev/CVMPlusPlus        (Windows / Git Bash)
+          cd ~/dev/CVMPlusPlus         (Linux / macOS)
+
+  (3) Confirm you see these folders and files:
+
+          CMakeLists.txt
+          README.md
+          include/
+          scripts/
+          src/
+          tests/
+
+
+================================================================
+  3. BUILD THE INTERPRETER
+================================================================
+
+Method 1 - Direct g++ (recommended, one command):
+
+    g++ -std=c++17 -O2 -Wall -Wextra -Iinclude src/*.cpp -o cvm.exe
+
+  On Linux / macOS, use "-o cvm" instead of "-o cvm.exe".
+
+  A successful build returns silently and creates cvm.exe in the
+  project root. If you see errors, read them carefully and fix
+  before running. Do NOT run a cvm.exe left over from a failed
+  build - it will segfault.
+
+  IMPORTANT: every flag uses "-" (dash), never "_" (underscore).
+  Common typo:  _Iinclude  vs  -Iinclude  -> first one fails.
+
+
+Method 2 - CMake:
+
+    mkdir build
+    cd build
+    cmake -G "MinGW Makefiles" ..       (Windows)
+    cmake ..                            (Linux / macOS)
+    cmake --build .
+    cd ..
+
+  Executable appears at build/cvm.exe (Windows) or build/cvm.
+
+
+================================================================
+  4. RUN A SAMPLE SCRIPT
+================================================================
+
+    ./cvm.exe scripts/variables.cvm
+
+  Expected output:
+    10
+    20
+    30
+    55
+    11
+
+Other samples:
+
+    ./cvm.exe scripts/loops.cvm
+        Expected: 5 4 3 2 1 55  (one per line)
+
+    ./cvm.exe scripts/conditionals.cvm
+        Expected: 7 1  (one per line)
+
+    printf "5\n7\n" | ./cvm.exe scripts/calculator.cvm
+        Expected: 12 -2 35  (one per line)
+
+
+================================================================
+  5. RUN THE INTERACTIVE SHELL (REPL)
+================================================================
+
+    ./cvm.exe
+
+  You will see:
+    CVM++ interactive shell. Type 'exit' to quit, 'run <file>'
+    to load a script.
+    >>>
+
+  Type a statement, press Enter:
+    >>> let x = 10; print(x + 5);
+    15
+
+  Type 'exit' or 'quit' to leave. Press Ctrl+D works too.
+
+  NOTE: each submission compiles and runs independently. So
+  "let x = 10;" on one line and "print(x);" on the next will
+  give an "undeclared variable" error. Put them on one line or
+  use 'run <file>' to execute a script.
+
+
+================================================================
+  6. DEBUG FLAGS (optional, for inspecting internals)
+================================================================
+
+    ./cvm.exe --tokens    scripts/loops.cvm
+        Shows the token stream from the lexer.
+
+    ./cvm.exe --ast       scripts/loops.cvm
+        Shows the parsed abstract syntax tree.
+
+    ./cvm.exe --bytecode  scripts/loops.cvm
+        Shows the compiled bytecode (disassembly).
+
+    ./cvm.exe --trace     scripts/loops.cvm
+        Logs every VM instruction as it executes.
+
+  All four can be combined:
+    ./cvm.exe --tokens --ast --bytecode scripts/loops.cvm
+
+  Debug output goes to stderr; the program output stays on
+  stdout. To save the debug dump:
+    ./cvm.exe --bytecode scripts/loops.cvm 2> dump.txt
+
+
+================================================================
+  7. TROUBLESHOOTING
+================================================================
+
+PROBLEM: "Segmentation fault" when running ./cvm.exe
+CAUSE:   Stale or broken binary from a previous failed build.
+FIX:     Delete and rebuild:
+             rm -f cvm.exe
+             g++ -std=c++17 -O2 -Wall -Wextra -Iinclude src/*.cpp -o cvm.exe
+
+PROBLEM: "fatal error: ast.h: No such file or directory"
+CAUSE:   -Iinclude flag missing or mistyped (e.g. _Iinclude).
+FIX:     Copy the build command exactly. All flags use dashes.
+
+PROBLEM: "bash: g++: command not found"
+CAUSE:   MinGW not on PATH.
+FIX:     Add C:\msys64\ucrt64\bin to your Windows PATH, then
+         close and reopen Git Bash.
+
+PROBLEM: "bash: ./cvm.exe: No such file or directory"
+CAUSE:   Build failed silently, or you are in the wrong folder.
+FIX:     Run "pwd" and "ls cvm.exe" to check. Rebuild if missing.
+
+PROBLEM: REPL says "undeclared variable" after I declared it
+CAUSE:   Each REPL submission is a separate program (no state).
+FIX:     Put declaration and use on one line, or use a script.
+
+PROBLEM: 'echo "5\n7"' is treated as one input by input()
+CAUSE:   Git Bash's echo does not interpret \n.
+FIX:     Use printf instead:  printf "5\n7\n" | ./cvm.exe ...
+
+
+================================================================
+  END OF INSTRUCTIONS
+================================================================
