@@ -1,0 +1,15 @@
+// calculator.cvm — read two integers from stdin and print sum/diff/product.
+//
+// Run with input piped in:
+//   echo "5\n7" | ./cvm scripts/calculator.cvm
+
+let a = 0;
+let b = 0;
+
+input(a);
+input(b);
+
+print(a + b);
+print(a - b);
+print(a * b);
+print(a / b);

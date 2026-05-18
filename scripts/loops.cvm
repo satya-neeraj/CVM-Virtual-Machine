@@ -1,0 +1,19 @@
+// loops.cvm — countdown using a while loop.
+
+let n = 5;
+
+while (n > 0)
+{
+    print(n);
+    n = n - 1;
+}
+
+// Sum 1..10.
+let i = 1;
+let sum = 0;
+while (i <= 10)
+{
+    sum = sum + i;
+    i = i + 1;
+}
+print(sum);

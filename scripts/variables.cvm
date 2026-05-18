@@ -1,0 +1,17 @@
+// variables.cvm — basic variable declarations and arithmetic.
+
+let a = 10;
+let b = 20;
+let c = a + b;
+
+print(a);
+print(b);
+print(c);
+
+let d = (a + b) * 2 - 5;
+print(d);
+
+// Reassignment.
+a = a + 1;
+print(a);
+print(b/a);
