@@ -120,7 +120,7 @@ Instructions are 1-byte opcodes. Some take a 16-bit little-endian operand
 From the project root:
 
 ```bash
-g++ -std=c++17 -O2 -Wall -Wextra -Iinclude src/*.cpp -o cvm.exe
+g++ -std=c++17 -g -Wall -Wextra -Iinclude src/*.cpp -o cvm.exe
 ```
 
 On Linux / macOS, drop the `.exe` and use `-o cvm` instead.
@@ -232,7 +232,7 @@ overwrite it if the linker bailed out partway through.
 
 ```bash
 rm -f cvm.exe
-g++ -std=c++17 -O2 -Wall -Wextra -Iinclude src/*.cpp -o cvm.exe
+g++ -std=c++17 -g -Wall -Wextra -Iinclude src/*.cpp -o cvm.exe
 ./cvm.exe scripts/variables.cvm
 ```
 
