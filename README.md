@@ -115,7 +115,19 @@ Instructions are 1-byte opcodes. Some take a 16-bit little-endian operand
 
 ## Building
 
-### CMake (recommended)
+### Manual g++ (recommended for first build)
+
+From the project root:
+
+```bash
+g++ -std=c++17 -O2 -Wall -Wextra -Iinclude src/*.cpp -o cvm.exe
+```
+
+On Linux / macOS, drop the `.exe` and use `-o cvm` instead.
+
+A clean build returns silently. The executable is placed in the project root.
+
+### CMake
 
 ```bash
 mkdir build && cd build
@@ -124,25 +136,15 @@ cmake --build .
 ctest --output-on-failure
 ```
 
-This produces `build/cvm` (the CLI), plus three test binaries.
-
-### Manual g++
-
-From the project root:
-
-```bash
-g++ -std=c++17 -O2 -Wall -Wextra -Iinclude \
-    src/lexer.cpp src/parser.cpp src/ast.cpp src/bytecode.cpp \
-    src/compiler.cpp src/vm.cpp src/repl.cpp src/main.cpp \
-    -o cvm
-```
+This produces `build/cvm` (the CLI), plus three test binaries. On Windows
+with MinGW, use `cmake -G "MinGW Makefiles" ..` instead of plain `cmake ..`.
 
 ## Running
 
 ### Execute a script
 
 ```bash
-./cvm scripts/variables.cvm
+./cvm.exe scripts/variables.cvm
 ```
 
 Expected output:
@@ -158,7 +160,7 @@ Expected output:
 ### REPL
 
 ```bash
-./cvm
+./cvm.exe
 ```
 
 ```
@@ -183,7 +185,7 @@ is no variable persistence between submissions yet. Use a script file or
 ### Calculator example with piped input
 
 ```bash
-printf "5\n7\n" | ./cvm scripts/calculator.cvm
+printf "5\n7\n" | ./cvm.exe scripts/calculator.cvm
 ```
 
 Output:
@@ -206,7 +208,74 @@ Output:
 Combine freely:
 
 ```bash
-./cvm --bytecode --trace scripts/loops.cvm
+./cvm.exe --bytecode --trace scripts/loops.cvm
+```
+
+## Troubleshooting
+
+### "Segmentation fault" when running `./cvm.exe`
+
+**Symptom.** You built the program, ran a script successfully once, then on a
+later invocation `./cvm.exe scripts/variables.cvm` immediately prints:
+
+```
+Segmentation fault
+```
+
+**Cause.** A stale or partially-built `cvm.exe` left over from an earlier
+compile attempt (one that hit an error, was interrupted, or used a slightly
+wrong command and produced a broken binary). The old binary loads but
+crashes on any non-trivial input. Subsequent successful builds do not always
+overwrite it if the linker bailed out partway through.
+
+**Fix.** Delete the binary explicitly, then rebuild from a clean state:
+
+```bash
+rm -f cvm.exe
+g++ -std=c++17 -O2 -Wall -Wextra -Iinclude src/*.cpp -o cvm.exe
+./cvm.exe scripts/variables.cvm
+```
+
+A clean build returns silently from `g++`. If you see compiler errors or
+warnings, **read them carefully and resolve them before running** — never run
+a `cvm.exe` left over from a failed build.
+
+### "fatal error: ast.h: No such file or directory"
+
+Your `-Iinclude` flag is missing or mistyped. Common typos: writing
+`_Iinclude` (underscore) instead of `-Iinclude` (dash), or running the
+command from outside the project root. The flag tells the compiler where
+to find the headers, so omitting it makes every `#include "ast.h"` fail.
+
+Copy the build command **exactly** as written above. All flags start with
+`-` (dash, ASCII `0x2D`) — never with `_` (underscore).
+
+### "Segmentation fault" but no stale binary
+
+If a clean rebuild also segfaults, get a backtrace:
+
+```bash
+g++ -std=c++17 -g -Wall -Wextra -Iinclude src/*.cpp -o cvm.exe
+gdb --batch -ex run -ex bt --args ./cvm.exe scripts/variables.cvm
+```
+
+The `-g` flag adds debug symbols; `gdb` prints the exact function and line
+where the crash occurred. File an issue with that output.
+
+### REPL says "undeclared variable 'x'" after I just declared it
+
+Expected — the REPL compiles each submission as a fresh, independent
+program. `let x = 10;` on one line and `print(x);` on the next are two
+separate programs, and the second one has never seen `x`. To work around it,
+type both on one line (`let x = 10; print(x);`), put them in a block, or use
+`run <file>` to execute a script.
+
+### `echo "10\n20"` is read as a single token by `input()`
+
+Git Bash's `echo` does not interpret `\n`. Use `printf` instead:
+
+```bash
+printf "10\n20\n" | ./cvm.exe scripts/calculator.cvm
 ```
 
 ## VS Code setup
@@ -226,7 +295,9 @@ A minimal `.vscode/c_cpp_properties.json` works out of the box:
 ```
 
 Build with the CMake Tools extension (Ctrl-Shift-P → "CMake: Configure"),
-then run / debug the `cvm` target.
+then run / debug the `cvm` target. Pick **Git Bash** as the default integrated
+terminal (Ctrl-Shift-P → "Terminal: Select Default Profile" → Git Bash) so
+the shell commands in this README work as written.
 
 ## Project layout
 
@@ -239,6 +310,9 @@ CVMPlusPlus/
 ├── CMakeLists.txt
 └── README.md
 ```
+
+Build artifacts (`cvm.exe`, `build/`, `*.o`) are not tracked by git — see
+`.gitignore`.
 
 ## Future extensions
 
